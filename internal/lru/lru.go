@@ -1,6 +1,10 @@
-package lrucache
+package lru
 
-import "time"
+import (
+	"time"
+
+	"github.com/zzjcool/lrucache/proto"
+)
 
 type lru[K comparable, V any] struct {
 	cap        int
@@ -16,30 +20,34 @@ type linkNode[K comparable, V any] struct {
 	Pre, Next *linkNode[K, V]
 }
 
-func newLRU[K comparable, V any](capacity int) *lru[K, V] {
+func NewLRU[K comparable, V any](capacity int) proto.LRU[K, V] {
 	head, tail := new(linkNode[K, V]), new(linkNode[K, V])
 	head.Next, tail.Pre = tail, head
 	return &lru[K, V]{
-		cap:     capacity,
 		hashMap: map[K]*linkNode[K, V]{},
 		head:    head,
 		tail:    tail,
 	}
 }
 
-func (l *lru[K, V]) get(key K) (val V, err error) {
+func (l *lru[K, V]) Setting(capacity int, t time.Duration) {
+	l.cap = capacity
+	l.expireTime = t
+}
+
+func (l *lru[K, V]) Get(key K) (val V, err error) {
 	if node, ok := l.hashMap[key]; ok {
 		if l.expireTime == 0 || node.ExpierAt.After(time.Now()) {
 			l.moveToHead(node)
 			return node.Val, nil
 		}
 		// key was outdate
-		return node.Val, ExpiredErr
+		return node.Val, proto.ExpiredErr
 	}
-	return val, NilErr
+	return val, proto.NilErr
 }
 
-func (l *lru[K, V]) set(key K, value V) {
+func (l *lru[K, V]) Set(key K, value V) {
 	node, ok := l.hashMap[key]
 	if ok {
 		node.Val = value
@@ -56,16 +64,16 @@ func (l *lru[K, V]) set(key K, value V) {
 		}
 		l.hashMap[key] = node
 		l.addToHead(node)
-		if l.len() > l.cap {
+		if l.Len() > l.cap {
 			l.removeTail()
 		}
 	}
 }
 
-func (l *lru[K, V]) delete(k K) error {
+func (l *lru[K, V]) Del(k K) error {
 	node, ok := l.hashMap[k]
 	if !ok {
-		return NilErr
+		return proto.NilErr
 	}
 	node.Pre.Next = node.Next
 	node.Next.Pre = node.Pre
@@ -92,4 +100,4 @@ func (this *lru[K, V]) removeTail() {
 	node.Next.Pre = node.Pre
 	delete(this.hashMap, node.Key)
 }
-func (this *lru[K, V]) len() int { return len(this.hashMap) }
+func (this *lru[K, V]) Len() int { return len(this.hashMap) }
