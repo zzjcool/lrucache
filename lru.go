@@ -63,10 +63,12 @@ func (l *lru[K, V]) set(key K, value V) {
 }
 
 func (l *lru[K, V]) delete(k K) error {
-	_, ok := l.hashMap[k]
+	node, ok := l.hashMap[k]
 	if !ok {
 		return NilErr
 	}
+	node.Pre.Next = node.Next
+	node.Next.Pre = node.Pre
 	delete(l.hashMap, k)
 	return nil
 }

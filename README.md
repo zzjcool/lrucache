@@ -12,3 +12,4 @@ This is an LRU cache implemented based on Go `generics`
 * Custom data source
 * Support for circuit breakers and downgrades available
 * Support Context
+* Thread safety
