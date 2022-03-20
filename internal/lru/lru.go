@@ -24,7 +24,7 @@ func NewLRU[K comparable, V any](capacity int) proto.LRU[K, V] {
 	head, tail := new(linkNode[K, V]), new(linkNode[K, V])
 	head.Next, tail.Pre = tail, head
 	return &lru[K, V]{
-		hashMap: map[K]*linkNode[K, V]{},
+		hashMap: make(map[K]*linkNode[K, V]),
 		head:    head,
 		tail:    tail,
 	}

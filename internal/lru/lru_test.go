@@ -10,15 +10,21 @@ import (
 	"github.com/zzjcool/lrucache/proto"
 )
 
-func NewTestLRU(cap int, t time.Duration) proto.LRU[string, string] {
-	l := NewLRU[string, string](cap)
-	l.Setting(cap, t)
-	return l
-}
-
 type kv struct {
 	k string
-	v string
+	v *val
+}
+
+var nilVal *val
+
+type val struct {
+	val string
+}
+
+func NewTestLRU(cap int, t time.Duration) proto.LRU[string, *val] {
+	l := NewLRU[string, *val](cap)
+	l.Setting(cap, t)
+	return l
 }
 
 // TestBasicLRU Test the basic functions of LRU
@@ -32,19 +38,18 @@ func TestBasicLRU(t *testing.T) {
 			name: "case1",
 			kv: kv{
 				k: "key",
-				v: "value",
+				v: &val{"value"},
 			},
 		},
 		{
 			name: "case2",
 			kv: kv{
 				k: "key2",
-				v: "value2",
+				v: &val{"value2"},
 			},
 		},
 	}
 	l := NewTestLRU(100, 0)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l.Set(tt.kv.k, tt.kv.v)
@@ -57,7 +62,7 @@ func TestBasicLRU(t *testing.T) {
 			err = l.Del(tt.kv.k)
 			assert.Equal(t, proto.NilErr, err)
 			v, err = l.Get(tt.kv.k)
-			assert.Equal(t, "", v)
+			assert.Equal(t, nilVal, v)
 			assert.Equal(t, proto.NilErr, err)
 			assert.Equal(t, 0, l.Len())
 		})
@@ -70,11 +75,11 @@ func TestValueUpdate(t *testing.T) {
 	l := NewTestLRU(100, 0)
 	kv1 := kv{
 		k: "key",
-		v: "value",
+		v: &val{"value"},
 	}
 	kv2 := kv{
 		k: "key",
-		v: "new value",
+		v: &val{"new value"},
 	}
 
 	l.Set(kv1.k, kv1.v)
@@ -96,7 +101,7 @@ func TestOutdated(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		v, err := l.Get(kvs[i].k)
 		assert.Equal(t, proto.NilErr, err)
-		assert.Equal(t, "", v)
+		assert.Equal(t, nilVal, v)
 	}
 	for i := 0; i < 100; i++ {
 		j := 50 + i
@@ -105,7 +110,7 @@ func TestOutdated(t *testing.T) {
 		assert.Equal(t, kvs[j].v, v)
 	}
 	assert.Equal(t, cap, l.Len())
-	lr, ok := l.(*lru[string, string])
+	lr, ok := l.(*lru[string, *val])
 	assert.Equal(t, true, ok)
 	node := lr.head
 	for i := 0; i < cap; i++ {
@@ -119,7 +124,7 @@ func TestExpired(t *testing.T) {
 	l := NewTestLRU(100, time.Second)
 	kv := kv{
 		k: "key",
-		v: "value",
+		v: &val{"value"},
 	}
 	l.Set(kv.k, kv.v)
 	time.Sleep(time.Second * 2)
@@ -138,8 +143,42 @@ func genNRandomKV(n int) []kv {
 	for i := 0; i < n; i++ {
 		ret = append(ret, kv{
 			k: fmt.Sprint(uuid.New().String()),
-			v: fmt.Sprint(uuid.New().String()),
+			v: &val{fmt.Sprint(uuid.New().String())},
 		})
 	}
 	return ret
+}
+
+func benchmarkSetGen(cap int, b *testing.B) {
+	l := NewTestLRU(cap, 0)
+	kvs := genNRandomKV(b.N)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l.Set(kvs[i].k, kvs[i].v)
+	}
+}
+
+func BenchmarkSet(b *testing.B) {
+	benchmarkSetGen(100000000, b)
+}
+
+func benchmarkGetGen(cap int, b *testing.B) {
+	l := NewTestLRU(cap, 0)
+	kvs := genNRandomKV(b.N)
+
+	for i := 0; i < b.N; i++ {
+		l.Set(kvs[i].k, kvs[i].v)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l.Get(kvs[i].k)
+	}
+}
+func BenchmarkGet(b *testing.B) {
+	benchmarkGetGen(100000000, b)
+
+}
+
+// TODO TestRace thread safety test
+func TestRace(t *testing.T) {
 }

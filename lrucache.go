@@ -7,25 +7,25 @@ import (
 	"github.com/zzjcool/lrucache/proto"
 )
 
-func (c *core[K, V]) NewContextLRUCache(capacity int, expand ...Option[K, V]) proto.LRUCacheWithCtx[K, V] {
-	lru := &contextlruCache[K, V]{
+func (c *core[K, V]) NewContextLRUCache(capacity int, ops ...Option[K, V]) proto.LRUCacheWithCtx[K, V] {
+	lru := &cacheOption[K, V]{
 		cap: capacity,
 		lru: lru.NewLRU[K, V](capacity),
 	}
-	for _, e := range expand {
-		e(lru)
+	for _, op := range ops {
+		op.apply(lru)
 	}
 	return lru
 }
 
-type contextlruCache[K comparable, V any] struct {
+type cacheOption[K comparable, V any] struct {
 	cap       int
 	lru       proto.LRU[K, V]
 	source    proto.ContextSource[K, V]
 	downgrade bool
 }
 
-func (c *contextlruCache[K, V]) Get(ctx context.Context, k K) (v V, err error) {
+func (c *cacheOption[K, V]) Get(ctx context.Context, k K) (v V, err error) {
 	v, err = c.lru.Get(k)
 	if err == nil {
 		return v, nil
@@ -63,7 +63,7 @@ func (c *contextlruCache[K, V]) Get(ctx context.Context, k K) (v V, err error) {
 	return v, err
 }
 
-func (c *contextlruCache[K, V]) Set(ctx context.Context, k K, v V) (err error) {
+func (c *cacheOption[K, V]) Set(ctx context.Context, k K, v V) (err error) {
 	c.lru.Set(k, v)
 	if c.source == nil {
 		return
@@ -71,7 +71,7 @@ func (c *contextlruCache[K, V]) Set(ctx context.Context, k K, v V) (err error) {
 	return c.source.Set(ctx, k, v)
 }
 
-func (c *contextlruCache[K, V]) Del(ctx context.Context, k K) (err error) {
+func (c *cacheOption[K, V]) Del(ctx context.Context, k K) (err error) {
 	err = c.lru.Del(k)
 	if c.source == nil {
 		return err
@@ -79,12 +79,12 @@ func (c *contextlruCache[K, V]) Del(ctx context.Context, k K) (err error) {
 	return c.source.Del(ctx, k)
 }
 
-func (c *contextlruCache[K, V]) Len() int {
+func (c *cacheOption[K, V]) Len() int {
 	return c.lru.Len()
 }
 
-func (c *core[K, V]) NewLRUCache(capacity int, expand ...Option[K, V]) proto.LRUCache[K, V] {
-	l := c.NewContextLRUCache(capacity, expand...)
+func (c *core[K, V]) NewLRUCache(capacity int, ops ...Option[K, V]) proto.LRUCache[K, V] {
+	l := c.NewContextLRUCache(capacity, ops...)
 	lru := &lruCache[K, V]{
 		lru: l,
 	}
