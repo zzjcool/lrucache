@@ -8,11 +8,11 @@ import (
 )
 
 type lru[K comparable, V any] struct {
-	cap        int
-	hashMap    map[K]*linkNode[K, V]
-	head, tail *linkNode[K, V]
-	expireTime time.Duration
-	mu         sync.Mutex
+	cap               int
+	hashMap           map[K]*linkNode[K, V]
+	head, tail        *linkNode[K, V]
+	defaultExpireTime time.Duration
+	mu                sync.Mutex
 }
 
 type linkNode[K comparable, V any] struct {
@@ -34,14 +34,14 @@ func NewLRU[K comparable, V any](capacity int) proto.LRU[K, V] {
 
 func (l *lru[K, V]) Setting(capacity int, t time.Duration) {
 	l.cap = capacity
-	l.expireTime = t
+	l.defaultExpireTime = t
 }
 
 func (l *lru[K, V]) Get(key K) (val V, err error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if node, ok := l.hashMap[key]; ok {
-		if l.expireTime == 0 || node.ExpierAt.After(time.Now()) {
+		if l.defaultExpireTime == 0 || node.ExpierAt.After(time.Now()) {
 			l.moveToHead(node)
 			return node.Val, nil
 		}
@@ -51,14 +51,14 @@ func (l *lru[K, V]) Get(key K) (val V, err error) {
 	return val, proto.NilErr
 }
 
-func (l *lru[K, V]) Set(key K, value V) {
+func (l *lru[K, V]) SetByExpire(key K, value V, expire time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	node, ok := l.hashMap[key]
 	if ok {
 		node.Val = value
-		if l.expireTime != 0 {
-			node.ExpierAt = time.Now().Add(l.expireTime)
+		if expire != 0 {
+			node.ExpierAt = time.Now().Add(expire)
 		}
 		l.moveToHead(node)
 		return
@@ -66,7 +66,7 @@ func (l *lru[K, V]) Set(key K, value V) {
 		node = &linkNode[K, V]{
 			Key:      key,
 			Val:      value,
-			ExpierAt: time.Now().Add(l.expireTime),
+			ExpierAt: time.Now().Add(expire),
 		}
 		l.hashMap[key] = node
 		l.addToHead(node)
@@ -74,6 +74,10 @@ func (l *lru[K, V]) Set(key K, value V) {
 			l.removeTail()
 		}
 	}
+}
+
+func (l *lru[K, V]) Set(key K, value V) {
+	l.SetByExpire(key, value, l.defaultExpireTime)
 }
 
 func (l *lru[K, V]) Del(k K) error {

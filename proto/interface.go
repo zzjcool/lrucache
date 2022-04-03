@@ -8,6 +8,7 @@ import (
 type LRU[K comparable, V any] interface {
 	Get(k K) (v V, err error)
 	Set(k K, v V)
+	SetByExpire(k K, v V, expire time.Duration)
 	Del(k K) (err error)
 	Len() int
 	Setting(capacity int, t time.Duration)
