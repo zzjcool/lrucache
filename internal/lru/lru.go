@@ -1,6 +1,7 @@
 package lru
 
 import (
+	"sync"
 	"time"
 
 	"github.com/zzjcool/lrucache/proto"
@@ -11,6 +12,7 @@ type lru[K comparable, V any] struct {
 	hashMap    map[K]*linkNode[K, V]
 	head, tail *linkNode[K, V]
 	expireTime time.Duration
+	mu         sync.Mutex
 }
 
 type linkNode[K comparable, V any] struct {
@@ -36,6 +38,8 @@ func (l *lru[K, V]) Setting(capacity int, t time.Duration) {
 }
 
 func (l *lru[K, V]) Get(key K) (val V, err error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if node, ok := l.hashMap[key]; ok {
 		if l.expireTime == 0 || node.ExpierAt.After(time.Now()) {
 			l.moveToHead(node)
@@ -48,6 +52,8 @@ func (l *lru[K, V]) Get(key K) (val V, err error) {
 }
 
 func (l *lru[K, V]) Set(key K, value V) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	node, ok := l.hashMap[key]
 	if ok {
 		node.Val = value
@@ -71,6 +77,8 @@ func (l *lru[K, V]) Set(key K, value V) {
 }
 
 func (l *lru[K, V]) Del(k K) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	node, ok := l.hashMap[k]
 	if !ok {
 		return proto.NilErr

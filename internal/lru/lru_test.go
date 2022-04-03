@@ -181,4 +181,13 @@ func BenchmarkGet(b *testing.B) {
 
 // TODO TestRace thread safety test
 func TestRace(t *testing.T) {
+	l := NewLRU[int, int](10)
+	for i := 0; i < 10000; i++ {
+		go func(i int) {
+			l.Set(i, 0)
+		}(i)
+		go func(i int) {
+			l.Get(i)
+		}(i)
+	}
 }
