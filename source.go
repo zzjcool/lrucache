@@ -25,6 +25,7 @@ type EmptySource[K comparable, V any] struct {
 func (s *EmptySource[K, V]) Get(k K) (v V, err error) {
 	return v, proto.NilErr
 }
+
 func (s *EmptySource[K, V]) Set(k K, v V) (err error) {
 	return
 }
@@ -39,6 +40,7 @@ type sourceWrapCtx[K comparable, V any] struct {
 func (s *sourceWrapCtx[K, V]) Get(ctx context.Context, k K) (v V, err error) {
 	return s.Source.Get(k)
 }
+
 func (s *sourceWrapCtx[K, V]) Set(ctx context.Context, k K, v V) (err error) {
 	return s.Source.Set(k, v)
 }

@@ -17,11 +17,14 @@ type LRU[K comparable, V any] interface {
 type LRUCacheWithCtx[K comparable, V any] interface {
 	handleWithCtx[K, V]
 	Len() int
+
+	SetByExpire(ctx context.Context, k K, v V, expire time.Duration) (err error)
 }
 
 type LRUCache[K comparable, V any] interface {
 	handle[K, V]
 	Len() int
+	SetByExpire(k K, v V, expire time.Duration) (err error)
 }
 
 type ContextSource[K comparable, V any] interface {

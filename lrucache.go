@@ -2,6 +2,7 @@ package lrucache
 
 import (
 	"context"
+	"time"
 
 	"github.com/zzjcool/lrucache/internal/lru"
 	"github.com/zzjcool/lrucache/proto"
@@ -63,6 +64,14 @@ func (c *cacheOption[K, V]) Get(ctx context.Context, k K) (v V, err error) {
 	return v, err
 }
 
+func (c *cacheOption[K, V]) SetByExpire(ctx context.Context, k K, v V, expire time.Duration) (err error) {
+	c.lru.SetByExpire(k, v, expire)
+	if c.source == nil {
+		return
+	}
+	return c.source.Set(ctx, k, v)
+}
+
 func (c *cacheOption[K, V]) Set(ctx context.Context, k K, v V) (err error) {
 	c.lru.Set(k, v)
 	if c.source == nil {
@@ -98,6 +107,11 @@ type lruCache[K comparable, V any] struct {
 func (c *lruCache[K, V]) Get(k K) (v V, err error) {
 
 	return c.lru.Get(context.Background(), k)
+}
+
+func (c *lruCache[K, V]) SetByExpire(k K, v V, expire time.Duration) (err error) {
+
+	return c.lru.SetByExpire(context.Background(), k, v, expire)
 }
 
 func (c *lruCache[K, V]) Set(k K, v V) (err error) {

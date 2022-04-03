@@ -29,6 +29,7 @@ func NewLRU[K comparable, V any](capacity int) proto.LRU[K, V] {
 		hashMap: make(map[K]*linkNode[K, V]),
 		head:    head,
 		tail:    tail,
+		cap:     capacity,
 	}
 }
 
@@ -64,9 +65,11 @@ func (l *lru[K, V]) SetByExpire(key K, value V, expire time.Duration) {
 		return
 	} else {
 		node = &linkNode[K, V]{
-			Key:      key,
-			Val:      value,
-			ExpierAt: time.Now().Add(expire),
+			Key: key,
+			Val: value,
+		}
+		if expire != 0 {
+			node.ExpierAt = time.Now().Add(expire)
 		}
 		l.hashMap[key] = node
 		l.addToHead(node)
