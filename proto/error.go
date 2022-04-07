@@ -1,4 +1,4 @@
-package lrucache
+package proto
 
 // NilErr the key not found
 const NilErr = LRUCacheError("Not found")
