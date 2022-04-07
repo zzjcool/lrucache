@@ -18,6 +18,7 @@ func TestNewContextLRUCache(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 }
+
 func TestNewLRUCache(t *testing.T) {
 	key, val := "key", "val"
 	core := New[string, string]()
