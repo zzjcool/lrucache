@@ -2,6 +2,7 @@ package lru
 
 import (
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -88,6 +89,29 @@ func TestValueUpdate(t *testing.T) {
 	v, err := l.Get(kv2.k)
 	assert.Equal(t, kv2.v, v)
 	assert.Equal(t, nil, err)
+}
+
+// TestRemoveHook Test remove hook
+func TestRemoveHook(t *testing.T) {
+	num := 200
+	l := NewLRU[string, *val](150)
+	count := int64(0)
+	hook := func(string, *val) {
+		atomic.AddInt64(&count, 1)
+	}
+	l.RegisterRemoveHook(hook)
+
+	kvs := genNRandomKV(num)
+	for _, kv := range kvs {
+		l.Set(kv.k, kv.v)
+	}
+
+	for _, kv := range kvs {
+		l.Del(kv.k)
+	}
+
+	assert.Equal(t, 0, l.Len())
+	assert.Equal(t, num, int(count))
 }
 
 // TestOutdated Testing outdated key
@@ -179,7 +203,7 @@ func BenchmarkGet(b *testing.B) {
 
 }
 
-// TODO TestRace thread safety test
+// TestRace thread safety test
 func TestRace(t *testing.T) {
 	l := NewLRU[int, int](10)
 	for i := 0; i < 10000; i++ {

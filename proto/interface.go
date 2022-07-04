@@ -12,7 +12,10 @@ type LRU[K comparable, V any] interface {
 	Del(k K) (err error)
 	Len() int
 	Setting(capacity int, t time.Duration)
+	RegisterRemoveHook(hook RemoveHook[K, V])
 }
+
+type RemoveHook[K comparable, V any] func(K, V)
 
 type LRUCacheWithCtx[K comparable, V any] interface {
 	handleWithCtx[K, V]

@@ -13,6 +13,8 @@ type lru[K comparable, V any] struct {
 	head, tail        *linkNode[K, V]
 	defaultExpireTime time.Duration
 	mu                sync.Mutex
+
+	removeHook proto.RemoveHook[K, V]
 }
 
 type linkNode[K comparable, V any] struct {
@@ -36,6 +38,10 @@ func NewLRU[K comparable, V any](capacity int) proto.LRU[K, V] {
 func (l *lru[K, V]) Setting(capacity int, t time.Duration) {
 	l.cap = capacity
 	l.defaultExpireTime = t
+}
+
+func (l *lru[K, V]) RegisterRemoveHook(hook proto.RemoveHook[K, V]) {
+	l.removeHook = hook
 }
 
 func (l *lru[K, V]) Get(key K) (val V, err error) {
@@ -93,6 +99,9 @@ func (l *lru[K, V]) Del(k K) error {
 	node.Pre.Next = node.Next
 	node.Next.Pre = node.Pre
 	delete(l.hashMap, k)
+	if l.removeHook != nil {
+		l.removeHook(node.Key, node.Val)
+	}
 	return nil
 }
 
@@ -109,10 +118,13 @@ func (l *lru[K, V]) addToHead(node *linkNode[K, V]) {
 	node.Next.Pre = node
 }
 
-func (this *lru[K, V]) removeTail() {
-	node := this.tail.Pre
+func (l *lru[K, V]) removeTail() {
+	node := l.tail.Pre
 	node.Pre.Next = node.Next
 	node.Next.Pre = node.Pre
-	delete(this.hashMap, node.Key)
+	delete(l.hashMap, node.Key)
+	if l.removeHook != nil {
+		l.removeHook(node.Key, node.Val)
+	}
 }
 func (this *lru[K, V]) Len() int { return len(this.hashMap) }
