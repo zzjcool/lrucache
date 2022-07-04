@@ -92,6 +92,10 @@ func (c *cacheOption[K, V]) Len() int {
 	return c.lru.Len()
 }
 
+func (c *cacheOption[K, V]) Clean() {
+	c.lru.Clean()
+}
+
 func (c *core[K, V]) NewLRUCache(capacity int, ops ...Option[K, V]) proto.LRUCache[K, V] {
 	l := c.NewContextLRUCache(capacity, ops...)
 	lru := &lruCache[K, V]{
@@ -126,4 +130,7 @@ func (c *lruCache[K, V]) Del(k K) (err error) {
 
 func (c *lruCache[K, V]) Len() int {
 	return c.lru.Len()
+}
+func (c *lruCache[K, V]) Clean() {
+	c.lru.Len()
 }

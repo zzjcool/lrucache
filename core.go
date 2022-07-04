@@ -19,4 +19,5 @@ type Core[K comparable, V any] interface {
 	WithSource(s proto.Source[K, V]) Option[K, V]
 	WithContextSource(s proto.ContextSource[K, V]) Option[K, V]
 	WithDowngrade() Option[K, V]
+	WithRemoveHook(removeHook proto.RemoveHook[K, V]) Option[K, V]
 }
