@@ -8,6 +8,7 @@ import (
 type LRU[K comparable, V any] interface {
 	Get(k K) (v V, err error)
 	Set(k K, v V)
+	Clean()
 	SetByExpire(k K, v V, expire time.Duration)
 	Del(k K) (err error)
 	Len() int
@@ -20,13 +21,14 @@ type RemoveHook[K comparable, V any] func(K, V)
 type LRUCacheWithCtx[K comparable, V any] interface {
 	handleWithCtx[K, V]
 	Len() int
-
+	Clean()
 	SetByExpire(ctx context.Context, k K, v V, expire time.Duration) (err error)
 }
 
 type LRUCache[K comparable, V any] interface {
 	handle[K, V]
 	Len() int
+	Clean()
 	SetByExpire(k K, v V, expire time.Duration) (err error)
 }
 

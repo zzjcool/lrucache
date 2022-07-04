@@ -105,6 +105,19 @@ func (l *lru[K, V]) Del(k K) error {
 	return nil
 }
 
+func (l *lru[K, V]) Clean() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for k, node := range l.hashMap {
+		node.Pre.Next = node.Next
+		node.Next.Pre = node.Pre
+		delete(l.hashMap, k)
+		if l.removeHook != nil {
+			l.removeHook(node.Key, node.Val)
+		}
+	}
+}
+
 func (this *lru[K, V]) moveToHead(node *linkNode[K, V]) {
 	node.Pre.Next = node.Next
 	node.Next.Pre = node.Pre

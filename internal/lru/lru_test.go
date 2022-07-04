@@ -114,6 +114,28 @@ func TestRemoveHook(t *testing.T) {
 	assert.Equal(t, num, int(count))
 }
 
+// TestClean Test clean cache
+func TestClean(t *testing.T) {
+	num := 200
+	l := NewTestLRU(num, 0)
+	count := int64(0)
+	hook := func(string, *val) {
+		atomic.AddInt64(&count, 1)
+	}
+	l.RegisterRemoveHook(hook)
+
+	kvs := genNRandomKV(num)
+	for _, kv := range kvs {
+		l.Set(kv.k, kv.v)
+	}
+
+	l.Clean()
+
+	assert.Equal(t, 0, l.Len())
+	assert.Equal(t, num, int(count))
+
+}
+
 // TestOutdated Testing outdated key
 func TestOutdated(t *testing.T) {
 	cap := 100
