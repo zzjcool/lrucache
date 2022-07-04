@@ -20,10 +20,10 @@ func (c *core[K, V]) NewContextLRUCache(capacity int, ops ...Option[K, V]) proto
 }
 
 type cacheOption[K comparable, V any] struct {
-	cap        int
-	lru        proto.LRU[K, V]
-	source     proto.ContextSource[K, V]
-	downgrade  bool
+	cap       int
+	lru       proto.LRU[K, V]
+	source    proto.ContextSource[K, V]
+	downgrade bool
 }
 
 func (c *cacheOption[K, V]) Get(ctx context.Context, k K) (v V, err error) {
