@@ -74,4 +74,5 @@ func (s *CustomSource) Get(ctx context.Context, key string) (string, error) {
 * WithExpireTime(t time.Duration): Set default expire time of cache
 * WithSource(s proto.Source[K, V]): Get from source when cache doesn't get data
 * WithContextSource(s proto.ContextSource[K, V]): source with context
-* WithDowngrade() Option[K, V]: When the data in the cache expires, continue to use the expired data if the attempt to obtain the source update data fails
+* WithDowngrade(): When the data in the cache expires, continue to use the expired data if the attempt to obtain the source update data fails
+* WithRemoveHook(removeHook proto.RemoveHook[K, V]): Add a hook, When a key is removed or expired

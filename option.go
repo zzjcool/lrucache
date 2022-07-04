@@ -41,7 +41,7 @@ func (c *core[K, V]) WithDowngrade() Option[K, V] {
 	})
 }
 
-func (c *core[K, V]) WithDeleteFunc(removeHook proto.RemoveHook[K, V]) Option[K, V] {
+func (c *core[K, V]) WithRemoveHook(removeHook proto.RemoveHook[K, V]) Option[K, V] {
 	return funcOption[K, V](func(l *cacheOption[K, V]) {
 		l.lru.RegisterRemoveHook(removeHook)
 	})
