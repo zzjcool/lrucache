@@ -2,6 +2,7 @@ package lrucache
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/zzjcool/lrucache/internal/lru"
@@ -24,6 +25,23 @@ type cacheOption[K comparable, V any] struct {
 	lru       proto.LRU[K, V]
 	source    proto.ContextSource[K, V]
 	downgrade bool
+	keyLock   keyLock
+}
+
+type keyLock struct {
+	locks sync.Map
+}
+
+func (kl *keyLock) Lock(key interface{}) {
+	lock, _ := kl.locks.LoadOrStore(key, &sync.Mutex{})
+	lock.(*sync.Mutex).Lock()
+}
+
+func (kl *keyLock) Unlock(key interface{}) {
+	lock, ok := kl.locks.Load(key)
+	if ok {
+		lock.(*sync.Mutex).Unlock()
+	}
 }
 
 func (c *cacheOption[K, V]) Get(ctx context.Context, k K) (v V, err error) {
@@ -38,6 +56,12 @@ func (c *cacheOption[K, V]) Get(ctx context.Context, k K) (v V, err error) {
 
 	// not found in memery
 	if err == proto.NilErr {
+		c.keyLock.Lock(k)
+		defer c.keyLock.Unlock(k)
+		v, err = c.lru.Get(k)
+		if err == nil {
+			return v, nil
+		}
 		v, err = c.source.Get(ctx, k)
 		if err != nil {
 			return v, err
